@@ -8,41 +8,48 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-const users = [
+// Simulação de um banco de dados de usuários
+const usuariosCadastrados = [
     {
         id: 1,
-        email: "usuario@gmail.com",
-        password: bcrypt.hashSync("123456", 10) 
+        email: "usuario@exemplo.com",
+        senhaHash: bcrypt.hashSync("minhaSenhaSegura", 10) 
     }
 ];
 
-app.post("/login", async (req, res) => {
+// Rota para autenticação
+app.post("/autenticar", async (req, res) => {
     const { email, senha } = req.body;
 
     if (!email || !senha) {
-        return res.status(400).json({ error: "Email e senha são obrigatórios" });
+        return res.status(400).json({ mensagem: "Email e senha são obrigatórios" });
     }
 
-    const user = users.find(user => user.email === email);
-    if (!user) {
-        return res.status(401).json({ error: "Credenciais inválidas" });
+    const usuario = usuariosCadastrados.find(u => u.email === email);
+    if (!usuario) {
+        return res.status(401).json({ mensagem: "Email ou senha incorretos" });
     }
 
-    const senhaCorreta = await bcrypt.compare(senha, user.password);
-    if (!senhaCorreta) {
-        return res.status(401).json({ error: "Credenciais inválidas" });
+    const senhaValida = await bcrypt.compare(senha, usuario.senhaHash);
+    if (!senhaValida) {
+        return res.status(401).json({ mensagem: "Email ou senha incorretos" });
     }
 
     const token = jwt.sign(
-        { id: user.id, email: user.email },
-        process.env.JWT_SECRET || "secreto",
-        { expiresIn: "1h" }
+        { id: usuario.id, email: usuario.email },
+        process.env.JWT_SECRETO || "segredoPadrao",
+        { expiresIn: "2h" } // Tempo de expiração 2 horas
     );
 
-    res.json({ token });
+    res.json({ token, mensagem: "Autenticação bem-sucedida!" });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+// Rota de boas-vindas
+app.get("/", (req, res) => {
+    res.send("Bem-vindo ao sistema de autenticação!");
+});
+
+const PORTA = process.env.PORTA || 3000;
+app.listen(PORTA, () => {
+    console.log(`Servidor está rodando na porta ${PORTA}`);
 });
